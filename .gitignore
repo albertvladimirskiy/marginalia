@@ -3,3 +3,6 @@ dist
 dev-dist
 *.tsbuildinfo
 .DS_Store
+
+# Personal spec, kept local only
+PROMPT.md

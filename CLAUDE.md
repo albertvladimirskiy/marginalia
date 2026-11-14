@@ -1,6 +1,6 @@
 # Marginalia — notes for Claude
 
-Daily writing tutor PWA. Vite + React 19 + TypeScript (strict, `noUncheckedIndexedAccess`), Dexie, zod, plain CSS. Spec: `PROMPT.md`. Plan: `PLAN.md`. User docs, assumptions and known limits: `README.md`.
+Daily writing tutor PWA. Vite + React 19 + TypeScript (strict, `noUncheckedIndexedAccess`), Dexie, zod, plain CSS. Spec: `PROMPT.md` (local only, git-ignored; it may be absent). Plan: `PLAN.md`. User docs, assumptions and known limits: `README.md`.
 
 ## Commands
 
