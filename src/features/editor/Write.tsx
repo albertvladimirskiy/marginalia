@@ -39,6 +39,9 @@ export function Write({ id }: { id: string }) {
           {lesson && ` · ${lesson.title}`}
           {draft.track && ` · ${trackName(draft.track)}`}
         </p>
+        {draft.sessionId && (
+          <p className="small"><a href={`#/session/${draft.sessionId}`}>See this session's feedback, drafts and reflection</a></p>
+        )}
       </div>
       <Editor draftId={id} preview={draft.kind === 'chapter' || draft.kind === 'scratch'} />
       {draft.imitation?.judgment && <ImitationResult judgment={draft.imitation.judgment} />}

@@ -8,6 +8,7 @@ import { LessonBody, Passage, ExerciseBrief } from '../lessons/LessonView';
 import { useLesson } from '../lessons/useLesson';
 import { FeedbackView, Round2View } from './FeedbackView';
 import { Chat } from './Chat';
+import { SessionRecord } from './SessionRecord';
 import { reviewLesson, wordRange } from './actions';
 import { addUsage, hasKey, onUsage, toAiError } from '../../ai/client';
 import { getFeedback, getRound2 } from '../../ai/tutor';
@@ -68,11 +69,12 @@ export function Session({ id }: { id: string }) {
 
   // Generate the lesson just-in-time when it isn't cached and a key exists.
   useEffect(() => {
-    if (state.status === 'missing' && hasKey() && !autoGen.current && navigator.onLine) {
+    // Never for a finished session: viewing history must not spend money.
+    if (state.status === 'missing' && session && session.step !== 'done' && hasKey() && !autoGen.current && navigator.onLine) {
       autoGen.current = true;
       generate(session?.longform);
     }
-  }, [state.status, generate, session?.longform]);
+  }, [state.status, generate, session]);
 
   if (session === undefined) return <p className="muted">Opening the session…</p>;
   if (!session) return <p>Session not found. <a href="#/">Back to Today</a></p>;
@@ -87,7 +89,7 @@ export function Session({ id }: { id: string }) {
     written = state.source === 'written';
   } else if (state.status === 'missing') {
     if (generating) return <p className="lede">The Tutor is writing today's lesson…</p>;
-    if (useSeed || !hasKey() || error) {
+    if (useSeed || !hasKey() || error || session.step === 'done') {
       lesson = state.seed;
     }
   }
@@ -135,7 +137,7 @@ export function Session({ id }: { id: string }) {
             <button onClick={() => setPanel((p) => !p)} aria-expanded={panel}>{panel ? 'Close mentor' : 'Ask the mentor'}</button>
           </div>
         )}
-        {state.status === 'missing' && lesson === state.seed && session.kind === 'lesson' && (
+        {state.status === 'missing' && lesson === state.seed && session.kind === 'lesson' && session.step !== 'done' && (
           <p className="note small hide-in-focus">
             {error ? `${error} ` : 'This lesson has not been generated yet. '}
             You are working from the syllabus entry.
@@ -413,20 +415,25 @@ function ReflectStep({ session, lesson }: { session: SessionT; lesson: LessonCon
 }
 
 function DoneStep({ session, lesson }: { session: SessionT; lesson: LessonContent }) {
-  const today = useLiveQuery(async () => {
+  const dayWords = useLiveQuery(async () => {
     let n = 0;
     await db.wordLog.where('date').equals(session.date).each((r) => (n += r.words));
     return n;
   }, [session.date]);
+  const isToday = session.date === localDate();
   return (
-    <div className="today">
-      <h1>Done.</h1>
-      <p className="lede">{lesson.title}. {today ?? 0} words on the page today.</p>
-      {session.reflection && <p className="prose" style={{ margin: '0 auto' }}><em>{session.reflection}</em></p>}
-      <div className="row" style={{ justifyContent: 'center', marginTop: 24 }}>
-        <a className="btn" href="#/archive">See it in the Archive</a>
-        <a className="btn" href="#/">Back to Today</a>
+    <div>
+      <div className="today" style={{ paddingTop: isToday ? '4vh' : 0 }}>
+        <h1>{isToday ? 'Done.' : lesson.title}</h1>
+        <p className="lede">
+          {isToday ? `${lesson.title}. ${dayWords ?? 0} words on the page today.` : `${dayWords ?? 0} words written that day.`}
+        </p>
+        <div className="row" style={{ justifyContent: 'center', margin: '16px 0 32px' }}>
+          <a className="btn" href="#/archive?tab=sessions">All sessions</a>
+          <a className="btn" href="#/">Back to Today</a>
+        </div>
       </div>
+      <SessionRecord session={session} lesson={lesson} />
     </div>
   );
 }

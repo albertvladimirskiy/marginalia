@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { db, TABLES, type TableName } from './db';
 import type { Draft } from './types';
 import { getSettings, updateSettings, type Settings } from '../lib/settings';
-import { syllabusById, trackName } from '../curriculum';
+import { WRITTEN_LESSONS, syllabusById, trackName } from '../curriculum';
+import { sessionToMarkdown } from './sessionMarkdown';
 import { localDate } from '../lib/dates';
 
 export interface Backup {
@@ -72,6 +73,25 @@ export async function exportMarkdownZip(): Promise<Blob> {
     const folder = d.projectId ? `projects/${slug(projects.get(d.projectId) ?? 'project')}` : d.kind;
     const name = `${localDate(new Date(d.createdAt))}-${slug(d.title)}-${d.id.slice(0, 6)}.md`;
     zip.file(`marginalia/${folder}/${name}`, draftToMarkdown(d, d.projectId ? projects.get(d.projectId) : undefined));
+  }
+
+  // One file per session, with the feedback written out in full.
+  const byId = new Map(drafts.map((d) => [d.id, d]));
+  const cached = new Map((await db.lessons.toArray()).map((l) => [l.id, l.content]));
+  for (const s of await db.sessions.orderBy('date').toArray()) {
+    if (!s.draft1Id) continue;
+    const entry = s.lessonId ? syllabusById.get(s.lessonId) : undefined;
+    const title = s.kind === 'review' ? `Review: ${byId.get(s.reviewOfId ?? '')?.title ?? 'an older piece'}` : (entry?.title ?? 'Session');
+    const lesson = s.lessonId ? (WRITTEN_LESSONS.get(s.lessonId) ?? cached.get(s.lessonId)) : undefined;
+    const md = sessionToMarkdown({
+      session: s,
+      title,
+      track: entry ? trackName(entry.track) : undefined,
+      questions: s.kind === 'lesson' ? (lesson?.questions ?? []) : [],
+      draft1: byId.get(s.draft1Id)?.text,
+      draft2: s.draft2Id ? byId.get(s.draft2Id)?.text : undefined,
+    });
+    zip.file(`marginalia/sessions/${s.date}-${slug(title)}-${s.id.slice(0, 6)}.md`, md);
   }
   return zip.generateAsync({ type: 'blob' });
 }

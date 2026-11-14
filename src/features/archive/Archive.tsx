@@ -6,6 +6,8 @@ import { syllabusById, trackName } from '../../curriculum';
 import { addDays, localDate, weekStart } from '../../lib/dates';
 import { computeStreak } from '../../lib/streak';
 import { useSettings } from '../../lib/settings';
+import { navigate, useRoute } from '../../lib/router';
+import type { Draft, Session } from '../../data/types';
 import { Write, kindLabel } from '../editor/Write';
 
 const MILESTONE = 100_000;
@@ -16,9 +18,12 @@ export function Archive({ id }: { id?: string }) {
 }
 
 function ArchiveIndex() {
+  const { query } = useRoute();
+  const tab = query.get('tab') === 'sessions' ? 'sessions' : 'pages';
   const [q, setQ] = useState('');
   const data = useLiveQuery(async () => ({
     drafts: await db.drafts.orderBy('createdAt').reverse().toArray(),
+    sessions: await db.sessions.orderBy('date').reverse().toArray(),
     log: await db.wordLog.toArray(),
     projects: await db.projects.toArray(),
   }), []);
@@ -32,9 +37,14 @@ function ArchiveIndex() {
       <h1>Archive</h1>
       <Pile log={data.log} projects={data.projects} />
       <Backup />
-      <h2>Every page</h2>
-      <label htmlFor="search" className="sr-only">Search your writing</label>
-      <input id="search" type="search" placeholder="Search everything you have written" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="tabs" role="tablist" style={{ marginTop: 28 }}>
+        <button role="tab" aria-selected={tab === 'pages'} onClick={() => navigate('/archive')}>Every page</button>
+        <button role="tab" aria-selected={tab === 'sessions'} onClick={() => navigate('/archive?tab=sessions')}>Sessions and feedback</button>
+      </div>
+      <label htmlFor="search" className="sr-only">Search</label>
+      <input id="search" type="search" placeholder={tab === 'pages' ? 'Search everything you have written' : 'Search sessions, feedback and reflections'} value={q} onChange={(e) => setQ(e.target.value)} />
+      {tab === 'sessions' ? <SessionList sessions={data.sessions} drafts={data.drafts} needle={needle} /> : (
+      <>
       <p className="small muted">{shown.length} {shown.length === 1 ? 'piece' : 'pieces'}</p>
       <ul className="list">
         {shown.map((d) => {
@@ -56,7 +66,52 @@ function ArchiveIndex() {
           );
         })}
       </ul>
+      </>
+      )}
     </div>
+  );
+}
+
+function sessionTitle(s: Session, drafts: Map<string, Draft>): string {
+  if (s.kind === 'review') return `Review: ${drafts.get(s.reviewOfId ?? '')?.title ?? 'an older piece'}`;
+  return (s.lessonId && syllabusById.get(s.lessonId)?.title) || 'Session';
+}
+
+/** One row per session, newest first, linking to the full record (drafts, feedback, revision check, reflection). */
+function SessionList({ sessions, drafts, needle }: { sessions: Session[]; drafts: Draft[]; needle: string }) {
+  const byId = new Map(drafts.map((d) => [d.id, d]));
+  const rows = sessions
+    .slice()
+    .sort((a, b) => b.startedAt - a.startedAt)
+    .filter((s) => !needle || `${sessionTitle(s, byId)} ${s.reflection ?? ''} ${s.selfPriority ?? ''} ${JSON.stringify(s.feedback1 ?? '')} ${JSON.stringify(s.feedback2 ?? '')}`.toLowerCase().includes(needle));
+  if (!rows.length) return <p className="muted" style={{ marginTop: 16 }}>{needle ? 'No sessions match.' : 'No sessions yet. Your first one will appear here with its feedback.'}</p>;
+  return (
+    <>
+      <p className="small muted">{rows.length} {rows.length === 1 ? 'session' : 'sessions'}</p>
+      <ul className="list">
+        {rows.map((s) => {
+          const f = s.feedback1?.ok ? s.feedback1.data : undefined;
+          const avg = f ? (f.scores.reduce((n, x) => n + x.score, 0) / f.scores.length).toFixed(1) : null;
+          const verdict = s.feedback2?.ok ? { yes: 'revision fixed it', partially: 'revision partly fixed it', no: 'revision did not fix it' }[s.feedback2.data.resolved] : null;
+          const detail = [
+            s.completedAt ? null : 'in progress',
+            s.longform ? 'long-form' : null,
+            avg ? `average ${avg}/5` : s.feedback1 ? 'mentor feedback' : s.selfPriority ? 'self-check' : null,
+            verdict,
+          ].filter(Boolean).join(' · ');
+          return (
+            <li key={s.id}>
+              <div className="spread">
+                <a href={`#/session/${s.id}`}>{sessionTitle(s, byId)}</a>
+                <span className="small muted">{new Date(s.startedAt).toLocaleDateString()}</span>
+              </div>
+              {detail && <div className="small muted">{detail}</div>}
+              {s.reflection && <div className="small"><em>{s.reflection}</em></div>}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 

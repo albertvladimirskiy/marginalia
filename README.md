@@ -56,8 +56,9 @@ Append to `MASTERS` in `src/masters/masters.ts`: method paragraph, five techniqu
 7. Without a key: the Self-check appears. Score each rubric line and name your priority #1 → **Revise**.
    With a key: **Get feedback** → reader response, strongest moment, ≤3 priorities with quotes, revision challenge, scores, weakness tags.
 8. Draft 2 is prefilled from Draft 1. **Finish revision** without changing anything → refused ("change something"). Edit, then finish. With a key, **Did my revision fix it?** returns yes/partially/no with evidence.
-9. Reflect: one sentence → **Finish today's session** → Done screen with today's word total.
-10. Archive: the streak is 1, the heat map has today, and search finds a word from your draft. **Export all as Markdown (.zip)** and **Download full backup (.json)** both download. **Restore from backup…** with the JSON restores it.
+9. Reflect: one sentence → **Finish today's session** → Done screen with today's word total, followed by the full session record (study answers, both drafts, feedback, revision check, reflection, mentor chat).
+9a. Archive → **Sessions and feedback** lists every session; opening one shows the same record. Opening a Draft 1 or Draft 2 in the Archive links back to its session.
+10. Archive: the streak is 1, the heat map has today, and search finds a word from your draft. **Export all as Markdown (.zip)** (drafts plus one file per session with its feedback written out) and **Download full backup (.json)** both download. **Restore from backup…** with the JSON restores it.
 11. Reload offline (DevTools → Network → Offline, after one online load of the production build): Today, the written lessons, the editor and the Archive all work. A mentor action says you are offline.
 
 ## Dependencies
