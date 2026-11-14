@@ -9,6 +9,7 @@ import { useLesson } from '../lessons/useLesson';
 import { FeedbackView, Round2View } from './FeedbackView';
 import { Chat } from './Chat';
 import { SessionRecord } from './SessionRecord';
+import { warmupFor } from '../../curriculum/warmups';
 import { reviewLesson, wordRange } from './actions';
 import { addUsage, hasKey, onUsage, toAiError } from '../../ai/client';
 import { getFeedback } from '../../ai/tutor';
@@ -146,7 +147,7 @@ export function Session({ id }: { id: string }) {
           </p>
         )}
 
-        {session.step === 'warmup' && <WarmupStep session={session} onNext={next} />}
+        {session.step === 'warmup' && <WarmupStep session={session} lesson={lesson} onNext={next} />}
         {session.step === 'lesson' && (
           <div>
             <LessonBody lesson={lesson} />
@@ -170,13 +171,18 @@ export function Session({ id }: { id: string }) {
   );
 }
 
-function WarmupStep({ session, onNext }: { session: SessionT; onNext: () => void }) {
-  const draftId = useDraft(session, 'warmupId', () => createDraft('warmup', `Warm-up ${localDate()}`, { sessionId: session.id }));
+function WarmupStep({ session, lesson, onNext }: { session: SessionT; lesson: LessonContent; onNext: () => void }) {
+  const draftId = useDraft(session, 'warmupId', () => createDraft('warmup', `Warm-up ${localDate()}`, { sessionId: session.id, lessonId: session.lessonId, track: lesson.track }));
+  const prompt = warmupFor(session.lessonId, lesson.track);
   return (
     <div>
-      <h1>Warm-up</h1>
-      <p className="lede">Write first, read second. Five minutes without stopping. Start anywhere; nothing here is judged.</p>
-      {draftId && <Editor draftId={draftId} timerMinutes={5} label="Warm-up freewrite" placeholder="Start with what is in front of you." />}
+      <div className="hide-in-focus">
+        <p className="small muted">Today's lesson: <strong>{lesson.title}</strong> — {lesson.hook}</p>
+        <h1>Warm-up</h1>
+        <p className="lede" style={{ color: 'var(--ink)' }}>{prompt}</p>
+        <p className="small muted">Five minutes without stopping. Write first, read second: the lesson comes after. If the prompt doesn't pull you, write about anything; the point is to get the pen moving.</p>
+      </div>
+      {draftId && <Editor draftId={draftId} timerMinutes={5} label="Warm-up freewrite" placeholder="Begin." />}
       <div className="row hide-in-focus" style={{ marginTop: 16 }}>
         <button className="primary" onClick={onNext}>Continue to the lesson</button>
       </div>

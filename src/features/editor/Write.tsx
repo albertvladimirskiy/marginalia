@@ -5,6 +5,9 @@ import { navigate } from '../../lib/router';
 import { syllabusById, trackName } from '../../curriculum';
 import { ImitationResult } from '../library/ImitationResult';
 import { Field } from '../../lib/Field';
+import { freePagePrompt } from '../../curriculum/warmups';
+import { localDate } from '../../lib/dates';
+import { MIN_DAILY_WORDS } from '../../lib/streak';
 
 const KIND_LABEL: Record<string, string> = {
   freewrite: 'Freewrite', warmup: 'Warm-up', study: 'Study answers', draft1: 'Draft 1', draft2: 'Draft 2',
@@ -39,11 +42,17 @@ export function Write({ id }: { id: string }) {
           {lesson && ` · ${lesson.title}`}
           {draft.track && ` · ${trackName(draft.track)}`}
         </p>
+        {draft.kind === 'scratch' && (
+          <p className="lede" style={{ color: 'var(--ink)', margin: '8px 0' }}>
+            {freePagePrompt(localDate(new Date(draft.createdAt)))}{' '}
+            <span className="small muted">Or anything at all. {MIN_DAILY_WORDS} words keeps the thread.</span>
+          </p>
+        )}
         {draft.sessionId && (
           <p className="small"><a href={`#/session/${draft.sessionId}`}>See this session's feedback, drafts and reflection</a></p>
         )}
       </div>
-      <Editor draftId={id} preview={draft.kind === 'chapter' || draft.kind === 'scratch'} />
+      <Editor draftId={id} preview={draft.kind === 'chapter' || draft.kind === 'scratch'} minWords={draft.kind === 'scratch' ? MIN_DAILY_WORDS : undefined} />
       {draft.imitation?.judgment && <ImitationResult judgment={draft.imitation.judgment} />}
       <p className="hide-in-focus" style={{ marginTop: 32 }}>
         <button onClick={remove}>Delete this draft</button>
