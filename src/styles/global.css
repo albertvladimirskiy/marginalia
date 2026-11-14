@@ -182,3 +182,16 @@ body.focus-mode .editor textarea.page { min-height: 90vh; padding-bottom: 50vh; 
   .big { font-size: 1.15rem; padding: 14px 20px; width: 100%; justify-content: center; }
   main { padding-top: 16px; }
 }
+
+/* Draft comparison */
+.compare { display: grid; gap: 20px; }
+@media (min-width: 760px) { .compare { grid-template-columns: 1fr 1fr; } }
+.compare h3 { margin: 0 0 6px; font-family: var(--sans); }
+.compare-text { white-space: pre-wrap; font-size: 1rem; line-height: 1.7; }
+ins { background: color-mix(in srgb, var(--accent) 22%, transparent); text-decoration: none; border-radius: 2px; }
+del { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px; }
+ins::before, del::before { position: absolute; clip-path: inset(50%); white-space: nowrap; }
+ins::before { content: ' [added] '; }
+del::before { content: ' [cut] '; }
+.legend del, .legend ins { padding: 0 4px; }
+.score-up { color: var(--accent); }

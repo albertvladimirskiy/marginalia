@@ -41,9 +41,23 @@ describe('feedback schema', () => {
     expect(FeedbackSchema.safeParse({ ...valid, scores: valid.scores.slice(0, 3) }).success).toBe(false);
   });
 
-  it('validates round 2', () => {
-    expect(Round2Schema.safeParse({ resolved: 'partially', evidence: 'x', new_observation: null }).success).toBe(true);
-    expect(Round2Schema.safeParse({ resolved: 'maybe', evidence: 'x', new_observation: null }).success).toBe(false);
+  it('validates round 2: verdict, evidence, re-scores, better/worse', () => {
+    const r2 = { resolved: 'partially', evidence: 'x', scores: [{ criterion: 'Economy', score: 4, note: 'Tighter.' }], improved: 'The ending lands.', worse: null, new_observation: null };
+    expect(Round2Schema.safeParse(r2).success).toBe(true);
+    expect(Round2Schema.safeParse({ ...r2, resolved: 'maybe' }).success).toBe(false);
+    expect(Round2Schema.safeParse({ ...r2, scores: [] }).success).toBe(false);
+    expect(Round2Schema.safeParse({ ...r2, scores: [{ criterion: 'Economy', score: 0, note: '' }] }).success).toBe(false);
+    const missing: Record<string, unknown> = { ...r2 };
+    delete missing.improved;
+    expect(Round2Schema.safeParse(missing).success).toBe(false);
+  });
+
+  it('keeps round 2 deliberately smaller than round 1', () => {
+    const r1Fields = Object.keys(FeedbackSchema.shape).length;
+    const r2Fields = Object.keys(Round2Schema.shape).length;
+    expect(r2Fields).toBeLessThanOrEqual(r1Fields);
+    expect(Object.keys(Round2Schema.shape)).not.toContain('reader_response');
+    expect(Object.keys(Round2Schema.shape)).not.toContain('priorities');
   });
 });
 

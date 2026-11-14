@@ -1,19 +1,42 @@
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../data/db';
 import type { LessonContent, Session } from '../../data/types';
 import { FeedbackView, Round2View } from './FeedbackView';
+import { DraftComparison } from './DraftComparison';
+import { draft1Scores, runRevisionCheck } from './revisionCheck';
+import { hasKey, toAiError } from '../../ai/client';
+import { useApiKey } from '../../lib/settings';
 
 /** Everything one session produced, on one page: drafts, feedback, revision check, reflection, mentor chat. */
 export function SessionRecord({ session, lesson }: { session: Session; lesson: LessonContent }) {
+  useApiKey();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const drafts = useLiveQuery(async () => {
     const [warmup, draft1, draft2, reviewOf] = await db.drafts.bulkGet([session.warmupId ?? '', session.draft1Id ?? '', session.draft2Id ?? '', session.reviewOfId ?? '']);
     return { warmup, draft1, draft2, reviewOf };
   }, [session.warmupId, session.draft1Id, session.draft2Id, session.reviewOfId]);
   if (!drafts) return null;
   const { warmup, draft1, draft2, reviewOf } = drafts;
+  const revised = Boolean(draft1 && draft2 && draft1.text.trim() !== draft2.text.trim());
 
+  async function check() {
+    setBusy(true);
+    setError(null);
+    try {
+      await runRevisionCheck(session, lesson);
+    } catch (e) {
+      setError(toAiError(e).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const narrow = { maxWidth: 'var(--measure)', margin: '0 auto', width: '100%' } as const;
   return (
-    <div className="stack" style={{ textAlign: 'left', maxWidth: 'var(--measure)', margin: '0 auto' }}>
+    <div className="stack" style={{ textAlign: 'left' }}>
+      <div className="stack" style={narrow}>
       <p className="small muted">
         {session.kind === 'review' ? (
           <>Review of {reviewOf ? <a href={`#/archive/${reviewOf.id}`}>{reviewOf.title}</a> : 'an older piece'}</>
@@ -65,11 +88,29 @@ export function SessionRecord({ session, lesson }: { session: Session; lesson: L
       </section>
 
       {draft2 && <DraftBlock title="Draft 2" id={draft2.id} text={draft2.text} words={draft2.words} />}
+      </div>
 
-      {session.feedback2 && (
+      {revised && draft1 && draft2 && <DraftComparison draft1={draft1.text} draft2={draft2.text} />}
+
+      <div className="stack" style={narrow}>
+      {revised && (
         <section>
-          <h2>Did the revision fix it?</h2>
-          <Round2View result={session.feedback2} />
+          <h2>How the revision did</h2>
+          {session.feedback2 ? (
+            <Round2View result={session.feedback2} before={draft1Scores(session)} />
+          ) : (
+            <p className="small muted">
+              A short second look from the mentor: did Draft 2 fix priority 1, what got better or worse, and Draft 2 scored on the same criteria as Draft 1. Much briefer than the first feedback.
+            </p>
+          )}
+          {error && <p className="note error small" role="alert">{error}</p>}
+          {hasKey() ? (
+            <button onClick={check} disabled={busy} style={{ marginTop: 8 }}>
+              {busy ? 'Comparing the drafts…' : session.feedback2 ? 'Check again' : 'Check my revision'}
+            </button>
+          ) : (
+            !session.feedback2 && <p className="small"><a href="#/settings">Add your API key</a> to have the mentor check the revision. The comparison above works without it.</p>
+          )}
         </section>
       )}
 
@@ -99,6 +140,7 @@ export function SessionRecord({ session, lesson }: { session: Session; lesson: L
           Mentor cost for this session: about ${session.usage.costUsd.toFixed(3)} ({(session.usage.inputTokens + session.usage.outputTokens).toLocaleString()} tokens).
         </p>
       )}
+      </div>
     </div>
   );
 }

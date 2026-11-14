@@ -38,11 +38,14 @@ export const FEEDBACK_TASK = `Task: give structured feedback on the student's Dr
 - next_step: one sentence.
 Respond only with the JSON object.`;
 
-export const ROUND2_TASK = `Task: second-round check. Compare Draft 2 with Draft 1 against priority 1 only.
-- resolved: yes / partially / no.
+export const ROUND2_TASK = `Task: second-round check on the student's revision. Keep it deliberately SHORT: a fraction of the first-round feedback, under 120 words in total excluding quotes. No reader response, no new priorities, no rewrites.
+- resolved: did Draft 2 resolve priority 1? yes / partially / no.
 - evidence: an exact quote from Draft 2 that shows it (or shows the problem persisting).
-- new_observation: at most one new observation in one or two sentences, or null.
-Be shorter than first-round feedback. Respond only with the JSON object.`;
+- scores: re-score Draft 2 on exactly the criteria listed, integers 1-5, same calibration as Draft 1 (3 = competent, 5 = rare). Each note at most 12 words. Move a score only when the writing changed; never reward revision for its own sake.
+- improved: one sentence on what got better.
+- worse: one sentence on anything that got worse or was lost in revision, or null if nothing did.
+- new_observation: at most one new observation in one sentence, or null.
+Respond only with the JSON object.`;
 
 export const LESSON_TASK = `Task: write one lesson for the student from a syllabus entry.
 - body: original prose in Markdown, 350-600 words, teaching one craft idea through the given master lens. Concrete, practical, no filler.

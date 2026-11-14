@@ -69,9 +69,22 @@ export const FeedbackSchema = z.object({
 });
 export type Feedback = z.infer<typeof FeedbackSchema>;
 
+/** Second round: deliberately much shorter than first-round feedback. */
 export const Round2Schema = z.object({
   resolved: z.enum(['yes', 'partially', 'no']),
   evidence: z.string().describe('Exact quote from Draft 2 that shows it.'),
+  scores: z
+    .array(
+      z.object({
+        criterion: z.string(),
+        score: z.number().int().min(1).max(5),
+        note: z.string().describe('At most 12 words.'),
+      }),
+    )
+    .min(1)
+    .max(6),
+  improved: z.string().describe('One sentence: what got better.'),
+  worse: z.string().nullable().describe('One sentence: what got worse or was lost, or null.'),
   new_observation: z.string().nullable(),
 });
 export type Round2 = z.infer<typeof Round2Schema>;

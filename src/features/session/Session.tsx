@@ -11,7 +11,8 @@ import { Chat } from './Chat';
 import { SessionRecord } from './SessionRecord';
 import { reviewLesson, wordRange } from './actions';
 import { addUsage, hasKey, onUsage, toAiError } from '../../ai/client';
-import { getFeedback, getRound2 } from '../../ai/tutor';
+import { getFeedback } from '../../ai/tutor';
+import { draft1Scores, runRevisionCheck } from './revisionCheck';
 import { MICRO_CONSTRAINTS, recurringWeakness } from '../../ai/context';
 import { useApiKey } from '../../lib/settings';
 import { localDate } from '../../lib/dates';
@@ -338,10 +339,7 @@ function ReviseStep({ session, lesson, onNext }: { session: SessionT; lesson: Le
     setBusy(true);
     setError(null);
     try {
-      const d2 = await db.drafts.get(draftId!);
-      const feedback = f?.ok ? f.data : (session.selfPriority ?? (f && !f.ok ? f.raw.slice(0, 600) : ''));
-      const feedback2 = await getRound2(lesson, draft1?.text ?? '', d2?.text ?? '', feedback);
-      await db.sessions.update(session.id, { feedback2 });
+      await runRevisionCheck({ ...session, draft2Id: draftId }, lesson);
     } catch (e) {
       setError(toAiError(e).message);
     } finally {
@@ -382,7 +380,7 @@ function ReviseStep({ session, lesson, onNext }: { session: SessionT; lesson: Le
       </div>
       {draftId && <Editor draftId={draftId} timerMinutes={10} label="Draft 2" />}
       <div className="stack hide-in-focus" style={{ marginTop: 16 }}>
-        {session.feedback2 && <Round2View result={session.feedback2} />}
+        {session.feedback2 && <Round2View result={session.feedback2} before={draft1Scores(session)} />}
         {error && <p className="note error" role="alert">{error}</p>}
         {unchanged && <p className="note" role="alert">Draft 2 is identical to Draft 1. The revision is the lesson: change something.</p>}
         <div className="row">

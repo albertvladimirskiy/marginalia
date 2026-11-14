@@ -62,15 +62,44 @@ export function FeedbackView({ result }: { result: FeedbackResult }) {
   );
 }
 
-export function Round2View({ result }: { result: Round2Result }) {
+/** Second-round feedback: short by design. Draft 1 scores (mentor or self-check) sit beside Draft 2's. */
+export function Round2View({ result, before }: { result: Round2Result; before?: Record<string, number> | null }) {
   if (!result.ok) return <div className="card prose" style={{ whiteSpace: 'pre-wrap' }}>{result.raw}</div>;
   const r = result.data;
-  const verdict = { yes: 'Resolved.', partially: 'Partially resolved.', no: 'Not resolved yet.' }[r.resolved];
+  const verdict = { yes: 'Priority 1: resolved.', partially: 'Priority 1: partially resolved.', no: 'Priority 1: not resolved yet.' }[r.resolved];
+  // Results saved before scores were added have none; show what there is.
+  const scores = r.scores ?? [];
   return (
     <section className="card">
-      <p><strong>{verdict}</strong></p>
+      <p style={{ marginTop: 0 }}><strong>{verdict}</strong></p>
       <blockquote className="passage">{r.evidence}</blockquote>
-      {r.new_observation && <p><span className="muted">One more thing:</span> {r.new_observation}</p>}
+      {r.improved && <p><span className="muted">Better:</span> {r.improved}</p>}
+      {r.worse && <p><span className="muted">Worse:</span> {r.worse}</p>}
+      {scores.length > 0 && (
+        <table className="scores small">
+          <thead>
+            <tr><th scope="col">Criterion</th><th scope="col">Draft 1</th><th scope="col">Draft 2</th><th scope="col"><span className="sr-only">Note</span></th></tr>
+          </thead>
+          <tbody>
+            {scores.map((s) => {
+              const was = before?.[s.criterion];
+              const delta = was === undefined ? null : s.score - was;
+              return (
+                <tr key={s.criterion}>
+                  <td>{s.criterion}</td>
+                  <td>{was ?? '—'}</td>
+                  <td className={delta && delta > 0 ? 'score-up' : undefined}>
+                    {s.score}
+                    {delta ? ` (${delta > 0 ? '+' : '−'}${Math.abs(delta)})` : ''}
+                  </td>
+                  <td className="muted">{s.note}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {r.new_observation && <p style={{ marginBottom: 0 }}><span className="muted">One more thing:</span> {r.new_observation}</p>}
     </section>
   );
 }

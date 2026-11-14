@@ -73,17 +73,34 @@ ${draft}
   return structured(FeedbackSchema, FEEDBACK_TASK, user, getSettings().model);
 }
 
-export async function getRound2(lesson: LessonContent, draft1: string, draft2: string, feedback: Feedback | string): Promise<Structured<Round2>> {
-  const p1 = typeof feedback === 'string' ? `Student-identified priority 1: ${feedback}` : `Priority 1: ${JSON.stringify(feedback.priorities[0])}\nRevision challenge: ${feedback.revision_challenge}`;
-  const user = `<lesson>${lesson.title}</lesson>
+export interface RevisionInput {
+  lessonTitle: string;
+  draft1: string;
+  draft2: string;
+  /** Priority 1 from the mentor, or the student's own from the self-check. */
+  priority: string;
+  challenge?: string;
+  criteria: string[];
+  /** Draft 1 scores by criterion, when there are any. */
+  before: Record<string, number> | null;
+}
+
+export async function getRound2(r: RevisionInput): Promise<Structured<Round2>> {
+  const before = r.before ? r.criteria.map((c) => `${c}: ${r.before![c] ?? 'not scored'}`).join('\n') : 'Draft 1 was not scored.';
+  const challenge = r.challenge ? `\nRevision challenge: ${r.challenge}` : '';
+  const user = `<lesson>${r.lessonTitle}</lesson>
 <priority>
-${p1}
+${r.priority}${challenge}
 </priority>
+<criteria>${r.criteria.join(', ')}</criteria>
+<draft1_scores>
+${before}
+</draft1_scores>
 <draft1>
-${draft1}
+${r.draft1}
 </draft1>
 <draft2>
-${draft2}
+${r.draft2}
 </draft2>`;
   return structured(Round2Schema, ROUND2_TASK, user, getSettings().model);
 }

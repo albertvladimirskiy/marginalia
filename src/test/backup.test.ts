@@ -106,7 +106,7 @@ describe('session markdown export', () => {
       study: ['It gives places and motion.', 'The parenthesis is the comment.'],
       draft1Id: d1.id, draft2Id: d2.id,
       feedback1: { ok: true, data: feedback },
-      feedback2: { ok: true, data: { resolved: 'partially', evidence: 'Forty-one.', new_observation: null } },
+      feedback2: { ok: true, data: { resolved: 'partially', evidence: 'Forty-one.', scores: [{ criterion: 'Concreteness', score: 5, note: 'The number does the work.' }, { criterion: 'Economy', score: 3, note: 'Chef line still there.' }], improved: 'The ending now lands on an object.', worse: null, new_observation: null } },
       reflection: 'Objects carry the feeling.',
       usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 }, startedAt: Date.parse('2026-11-13T20:00:00Z'), completedAt: 2,
     });
@@ -125,7 +125,13 @@ describe('session markdown export', () => {
     expect(md).toContain('- Concreteness: 4/5 — Strong objects.');
     expect(md).toContain('**Weakness tags:** Over-explaining');
     expect(md).toContain('## Draft 2\n\nMy father keeps a folder. Forty-one.');
-    expect(md).toContain('**Partially resolved.**');
+    expect(md).toContain('*Revision: 0 words cut, 1 added, 5 kept.*');
+    expect(md).toContain('## How the revision did');
+    expect(md).toContain('**Priority 1: partially resolved.**');
+    expect(md).toContain('Better: The ending now lands on an object.');
+    expect(md).not.toContain('Worse:');
+    expect(md).toContain('- Concreteness: 4 → 5 — The number does the work.');
+    expect(md).toContain('- Economy: 3 → 3 — Chef line still there.');
     expect(md).toContain('## Reflection\n\nObjects carry the feeling.');
   });
 

@@ -1,5 +1,6 @@
 import type { FeedbackResult, Round2Result, Session } from './types';
 import { WEAKNESS_LABELS } from '../ai/schemas';
+import { diffDrafts, diffStats } from '../lib/diff';
 
 const yaml = (v: string) => JSON.stringify(v);
 const quote = (t: string) => t.split('\n').map((l) => `> ${l}`).join('\n');
@@ -39,10 +40,21 @@ export function feedbackToMarkdown(f: FeedbackResult): string {
     .join('\n\n');
 }
 
-export function round2ToMarkdown(r: Round2Result): string {
+export function round2ToMarkdown(r: Round2Result, before: Record<string, number> | null = null): string {
   if (!r.ok) return r.raw;
-  const verdict = { yes: 'Resolved.', partially: 'Partially resolved.', no: 'Not resolved yet.' }[r.data.resolved];
-  return [`**${verdict}**`, quote(r.data.evidence), r.data.new_observation ? `One more thing: ${r.data.new_observation}` : ''].filter(Boolean).join('\n\n');
+  const d = r.data;
+  const verdict = { yes: 'Priority 1: resolved.', partially: 'Priority 1: partially resolved.', no: 'Priority 1: not resolved yet.' }[d.resolved];
+  const scores = (d.scores ?? []).map((s) => `- ${s.criterion}: ${before?.[s.criterion] ?? '—'} → ${s.score} — ${s.note}`).join('\n');
+  return [
+    `**${verdict}**`,
+    quote(d.evidence),
+    d.improved ? `Better: ${d.improved}` : '',
+    d.worse ? `Worse: ${d.worse}` : '',
+    scores ? `Scores (Draft 1 → Draft 2):\n\n${scores}` : '',
+    d.new_observation ? `One more thing: ${d.new_observation}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 /** A whole session as one Markdown document: study, drafts, feedback, revision check, reflection, mentor chat. */
@@ -76,7 +88,12 @@ export function sessionToMarkdown(args: {
     parts.push('## Self-check', [scores, `**Priority 1:** ${s.selfPriority}`].filter(Boolean).join('\n\n'));
   }
   if (draft2?.trim()) parts.push('## Draft 2', draft2);
-  if (s.feedback2) parts.push('## Did the revision fix it?', round2ToMarkdown(s.feedback2));
+  if (draft1?.trim() && draft2?.trim() && draft1.trim() !== draft2.trim()) {
+    const { cut, added, kept } = diffStats(diffDrafts(draft1, draft2));
+    parts.push(`*Revision: ${cut} words cut, ${added} added, ${kept} kept.*`);
+  }
+  const before = s.feedback1?.ok ? Object.fromEntries(s.feedback1.data.scores.map((x) => [x.criterion, x.score])) : (s.selfScores ?? null);
+  if (s.feedback2) parts.push('## How the revision did', round2ToMarkdown(s.feedback2, before));
   if (s.reflection) parts.push('## Reflection', s.reflection);
   if (s.chat?.length) parts.push('## Ask the Mentor', s.chat.map((m) => `**${m.role === 'user' ? 'You' : 'Mentor'}:** ${m.content}`).join('\n\n'));
 

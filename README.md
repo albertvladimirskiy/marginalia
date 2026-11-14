@@ -57,7 +57,8 @@ Append to `MASTERS` in `src/masters/masters.ts`: method paragraph, five techniqu
    With a key: **Get feedback** → reader response, strongest moment, ≤3 priorities with quotes, revision challenge, scores, weakness tags.
 8. Draft 2 is prefilled from Draft 1. **Finish revision** without changing anything → refused ("change something"). Edit, then finish. With a key, **Did my revision fix it?** returns yes/partially/no with evidence.
 9. Reflect: one sentence → **Finish today's session** → Done screen with today's word total, followed by the full session record (study answers, both drafts, feedback, revision check, reflection, mentor chat).
-9a. Archive → **Sessions and feedback** lists every session; opening one shows the same record. Opening a Draft 1 or Draft 2 in the Archive links back to its session.
+9a. In the session record, **Draft 1 → Draft 2** shows both drafts side by side with cuts struck through and additions highlighted (works offline). **Check my revision** (with a key) runs the short second-round check even after the session ended: priority 1 verdict, one sentence on what got better and what got worse, and Draft 2 re-scored next to Draft 1's scores.
+9b. Archive → **Sessions and feedback** lists every session; opening one shows the same record. Opening a Draft 1 or Draft 2 in the Archive links back to its session.
 10. Archive: the streak is 1, the heat map has today, and search finds a word from your draft. **Export all as Markdown (.zip)** (drafts plus one file per session with its feedback written out) and **Download full backup (.json)** both download. **Restore from backup…** with the JSON restores it.
 11. Reload offline (DevTools → Network → Offline, after one online load of the production build): Today, the written lessons, the editor and the Archive all work. A mentor action says you are offline.
 
@@ -112,6 +113,7 @@ Domain logic (`lib/`, `data/`, `ai/`, `curriculum/`) has no React imports except
 15. Model passages are public domain in the US: Garnett, Maude, Long, Trotter and Zimmern translations, the KJV, and works published before 1930 (including *A Farewell to Arms*, "Hills Like White Elephants", and *Mrs Dalloway*). Status differs in other countries.
 16. UI sans-serif is the system font stack (nothing to download); Literata is used for reading and the editor.
 17. Versions are snapshotted at most every 2 minutes while typing, plus on blur, tab hide and leaving the page; 20 kept per draft.
+18. Second-round (revision) feedback is deliberately short: under ~120 words, no reader response or new priorities. It re-scores Draft 2 on the same criteria Draft 1 was scored on (the mentor's, or your self-check's), and is told to move a score only when the writing changed.
 
 ## Known limits
 
