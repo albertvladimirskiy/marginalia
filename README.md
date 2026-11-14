@@ -114,6 +114,7 @@ Domain logic (`lib/`, `data/`, `ai/`, `curriculum/`) has no React imports except
 16. UI sans-serif is the system font stack (nothing to download); Literata is used for reading and the editor.
 17. Versions are snapshotted at most every 2 minutes while typing, plus on blur, tab hide and leaving the page; 20 kept per draft.
 18. Second-round (revision) feedback is deliberately short: under ~120 words, no reader response or new priorities. It re-scores Draft 2 on the same criteria Draft 1 was scored on (the mentor's, or your self-check's), and is told to move a score only when the writing changed.
+19. An unfinished session can be set aside from Today; its drafts stay in the Archive, and opening it from Sessions makes it the session Today offers to resume again. Word ranges from AI-written lessons are kept achievable (minimum 50–800 words, maximum at least 100 above it).
 
 ## Known limits
 

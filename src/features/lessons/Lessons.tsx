@@ -7,7 +7,7 @@ import { hasKey } from '../../ai/client';
 import { useApiKey } from '../../lib/settings';
 import { useLesson } from './useLesson';
 import { LessonBody, Passage, ExerciseBrief } from './LessonView';
-import { startLessonSession } from '../session/actions';
+import { startLessonSession, wordRange } from '../session/actions';
 
 export function Lessons({ id }: { id?: string }) {
   if (id) return <LessonDetail id={id} />;
@@ -95,7 +95,7 @@ function LessonDetail({ id }: { id: string }) {
       )}
       <LessonBody lesson={lesson} />
       <Passage lesson={lesson} />
-      <ExerciseBrief lesson={lesson} range={{ min: lesson.exercise.minWords, max: lesson.exercise.maxWords }} />
+      <ExerciseBrief lesson={lesson} range={wordRange(lesson)} />
       {prereqs.length > 0 && <p className="small muted">Suggested first: {prereqs.join(', ')}.</p>}
       <div className="row" style={{ marginTop: 16 }}>
         <button className="primary" onClick={() => startLessonSession(id)}>Start this lesson</button>

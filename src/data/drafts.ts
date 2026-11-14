@@ -28,16 +28,23 @@ export async function logWords(words: number, projectId = '', date = localDate()
 /**
  * Saves text, logs positive word deltas, and snapshots a version at most every
  * two minutes (or immediately with force). Keeps the last 20 versions.
+ *
+ * One read-write transaction: overlapping saves of the same draft (blur +
+ * unmount, pagehide + visibilitychange) run one after another, so the second
+ * sees the first's text and words are logged once. Reads started after a save
+ * also wait for it, so the revision check never sees a half-saved draft.
  */
 export async function saveDraftText(id: string, text: string, opts: { forceSnapshot?: boolean } = {}): Promise<void> {
-  const draft = await db.drafts.get(id);
-  if (!draft) return;
-  const words = countWords(text);
-  if (text !== draft.text) {
-    await db.drafts.update(id, { text, words, updatedAt: Date.now() });
-    await logWords(words - draft.words, draft.projectId ?? '');
-  }
-  await maybeSnapshot(id, text, words, opts.forceSnapshot ?? false);
+  await db.transaction('rw', db.drafts, db.wordLog, db.versions, async () => {
+    const draft = await db.drafts.get(id);
+    if (!draft) return;
+    const words = countWords(text);
+    if (text !== draft.text) {
+      await db.drafts.update(id, { text, words, updatedAt: Date.now() });
+      await logWords(words - draft.words, draft.projectId ?? '');
+    }
+    await maybeSnapshot(id, text, words, opts.forceSnapshot ?? false);
+  });
 }
 
 async function maybeSnapshot(draftId: string, text: string, words: number, force: boolean): Promise<void> {
@@ -51,12 +58,14 @@ async function maybeSnapshot(draftId: string, text: string, words: number, force
 }
 
 export async function restoreVersion(draftId: string, versionId: number): Promise<string | undefined> {
-  const v = await db.versions.get(versionId);
-  const draft = await db.drafts.get(draftId);
-  if (!v || !draft) return;
-  await maybeSnapshot(draftId, draft.text, draft.words, true); // keep what we're replacing
-  await db.drafts.update(draftId, { text: v.text, words: v.words, updatedAt: Date.now() });
-  return v.text;
+  return db.transaction('rw', db.drafts, db.versions, async () => {
+    const v = await db.versions.get(versionId);
+    const draft = await db.drafts.get(draftId);
+    if (!v || !draft) return undefined;
+    await maybeSnapshot(draftId, draft.text, draft.words, true); // keep what we're replacing
+    await db.drafts.update(draftId, { text: v.text, words: v.words, updatedAt: Date.now() });
+    return v.text;
+  });
 }
 
 export async function totalWordsWritten(): Promise<number> {

@@ -69,6 +69,11 @@ export function Session({ id }: { id: string }) {
     [id],
   );
 
+  // Opening a set-aside session picks it back up: it becomes Today's open session again.
+  useEffect(() => {
+    if (session && !session.completedAt && session.setAsideAt) db.sessions.update(id, { setAsideAt: undefined });
+  }, [session, id]);
+
   // Generate the lesson just-in-time when it isn't cached and a key exists.
   useEffect(() => {
     // Never for a finished session: viewing history must not spend money.

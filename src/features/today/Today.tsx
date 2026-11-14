@@ -8,7 +8,7 @@ import { computeStreak, MIN_DAILY_WORDS } from '../../lib/streak';
 import { useSettings } from '../../lib/settings';
 import { navigate } from '../../lib/router';
 import { epigraphFor } from '../../masters/epigraphs';
-import { reviewCandidates, startLessonSession, startReviewSession } from '../session/actions';
+import { openSession, reviewCandidates, startLessonSession, startReviewSession } from '../session/actions';
 
 const WEEK_MS = 7 * 86_400_000;
 
@@ -33,7 +33,7 @@ export function Today() {
     hasReviewable: candidates.length > 0,
     hasProject: projects.length > 0,
   });
-  const open = sessions.filter((s) => !s.completedAt).sort((a, b) => b.startedAt - a.startedAt)[0];
+  const open = openSession(sessions);
   const doneToday = sessions.some((s) => s.date === today && s.completedAt);
 
   const byDate = new Map<string, number>();
@@ -75,6 +75,10 @@ export function Today() {
           <h1>Pick up where you left off.</h1>
           <p className="lede">{open.lessonId ? syllabusById.get(open.lessonId)?.title : 'Review session'}</p>
           <button className="primary big" onClick={() => navigate(`/session/${open.id}`)}>Resume today's session</button>
+          <p className="small" style={{ marginTop: 16 }}>
+            <button className="link" onClick={() => db.sessions.update(open.id, { setAsideAt: Date.now() })}>Set this session aside</button>
+            <span className="muted"> and start fresh. Its drafts stay in the Archive; open it from Sessions to pick it back up.</span>
+          </p>
         </>
       ) : (
         <>

@@ -94,7 +94,7 @@ function SessionList({ sessions, drafts, needle }: { sessions: Session[]; drafts
           const avg = f ? (f.scores.reduce((n, x) => n + x.score, 0) / f.scores.length).toFixed(1) : null;
           const verdict = s.feedback2?.ok ? { yes: 'revision fixed it', partially: 'revision partly fixed it', no: 'revision did not fix it' }[s.feedback2.data.resolved] : null;
           const detail = [
-            s.completedAt ? null : 'in progress',
+            s.completedAt ? null : s.setAsideAt ? 'set aside · open it to pick it back up' : 'in progress',
             s.longform ? 'long-form' : null,
             avg ? `average ${avg}/5` : s.feedback1 ? 'mentor feedback' : s.selfPriority ? 'self-check' : null,
             verdict,

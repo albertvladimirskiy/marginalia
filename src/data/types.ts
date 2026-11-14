@@ -91,6 +91,8 @@ export interface Session {
   usage: Usage;
   startedAt: number;
   completedAt?: number;
+  /** Unfinished and set aside from Today; opening it again picks it back up. */
+  setAsideAt?: number;
 }
 
 export interface Character {

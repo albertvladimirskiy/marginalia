@@ -30,6 +30,21 @@ describe('drafts', () => {
     expect(await db.versions.where('draftId').equals(d.id).count()).toBe(MAX_VERSIONS);
   });
 
+  it('counts words once when two saves of the same text overlap (blur + unmount, pagehide + visibilitychange)', async () => {
+    const d = await createDraft('draft1', 'Test');
+    const text = 'one two three four five six seven eight nine ten';
+    await Promise.all([saveDraftText(d.id, text, { forceSnapshot: true }), saveDraftText(d.id, text, { forceSnapshot: true })]);
+    expect(await totalWordsWritten()).toBe(10);
+    expect(await db.versions.where('draftId').equals(d.id).count()).toBe(1);
+  });
+
+  it('counts words once when overlapping saves carry growing text', async () => {
+    const d = await createDraft('draft1', 'Test');
+    await Promise.all([saveDraftText(d.id, 'one two three'), saveDraftText(d.id, 'one two three four five')]);
+    expect(await totalWordsWritten()).toBe(5);
+    expect((await db.drafts.get(d.id))?.words).toBe(5);
+  });
+
   it('restores a version and snapshots the replaced text first', async () => {
     const d = await createDraft('draft1', 'Test');
     await saveDraftText(d.id, 'first text', { forceSnapshot: true });

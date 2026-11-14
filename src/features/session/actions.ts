@@ -5,6 +5,7 @@ import { localDate } from '../../lib/dates';
 import { getSettings } from '../../lib/settings';
 import { navigate } from '../../lib/router';
 import { LONGFORM_RANGE } from '../../lib/scheduler';
+import { saneRange } from '../../lib/wordRange';
 
 const ZERO = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -74,8 +75,13 @@ export function reviewLesson(old: Draft): LessonContent {
   };
 }
 
+/** The session Today offers to resume: the newest one neither finished nor set aside. */
+export function openSession(sessions: Session[]): Session | undefined {
+  return sessions.filter((s) => !s.completedAt && !s.setAsideAt).sort((a, b) => b.startedAt - a.startedAt)[0];
+}
+
 export function wordRange(lesson: LessonContent, longform?: boolean): { min: number; max: number } {
-  return longform ? LONGFORM_RANGE : { min: lesson.exercise.minWords, max: lesson.exercise.maxWords };
+  return longform ? LONGFORM_RANGE : saneRange(lesson.exercise.minWords, lesson.exercise.maxWords);
 }
 
 export const STEP_ORDER = ['warmup', 'lesson', 'study', 'draft', 'feedback', 'revise', 'reflect', 'done'] as const;
