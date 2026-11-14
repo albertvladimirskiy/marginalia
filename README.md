@@ -121,6 +121,6 @@ Domain logic (`lib/`, `data/`, `ai/`, `curriculum/`) has no React imports except
 - Archive search is an in-memory substring match (fine for thousands of drafts).
 - Daily reminders are an `.ics` calendar file only, by design (no push server).
 - Browsers may decline `navigator.storage.persist()`; the Archive shows the status.
-- Main bundle is ~270 kB gzipped (React, Dexie, zod, Markdown, lesson text); the SDK (~80 kB) loads on first mentor call.
+- Main bundle is ~305 kB gzipped (React, Dexie, zod, Markdown, and the text of 37 written lessons); the SDK (~80 kB) loads on first mentor call.
 - `npm audit` reports moderate/low advisories in build-time tooling only (typescript-eslint, workbox-build); `npm audit --omit=dev` is clean.
 - Not built (stretch): Cloudflare Worker proxy, spaced repetition of techniques, weekly review report.
