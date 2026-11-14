@@ -19,7 +19,7 @@ Node 20+ (built with Node 25).
 
 ### API key
 
-Settings → *Anthropic API key*. Use a **dedicated key with a spending limit**. The key is stored in this browser's localStorage only, sent only to `api.anthropic.com`, and never included in backups. Without a key, lessons 1–14, writing, the self-check feedback path, the Studio and the Archive all work; the app tells you where a key would add mentor feedback.
+Settings → *Anthropic API key*. Use a **dedicated key with a spending limit**. The key is stored in this browser's localStorage only, sent only to `api.anthropic.com`, and never included in backups. Without a key, the 37 hand-written lessons, writing, the self-check feedback path, the Studio and the Archive all work; the app tells you where a key would add mentor feedback.
 
 Default models: feedback and chat on `claude-sonnet-5-5`, lesson generation on `claude-haiku-5-5`. Both are selectable in Settings (Haiku 5.5 / Sonnet 5.5 / Opus 5.5).
 
@@ -38,7 +38,7 @@ Routing uses `#/hash` URLs, so Pages needs no SPA fallback. To serve from a cust
   { level: 2, title: 'The unsent letter', objective: 'One sentence.', masterLens: 'Seneca: …', exerciseSeed: '…' }
   ```
   The id (`e-19`), default prerequisite (the previous lesson in the track), default rubric and estimated minutes are filled in by `build()`. Override any of them on the row. Any entry without a written lesson is generated just-in-time by the Tutor and cached in IndexedDB.
-- **Fully written lessons** live in `src/curriculum/foundations-a.ts` / `foundations-b.ts` as `LessonContent` objects and are registered in `WRITTEN_LESSONS` (`src/curriculum/index.ts`). A written lesson for any syllabus id overrides generation. The test suite checks bodies are 350–600 words with 2 questions and 3 pitfalls.
+- **Fully written lessons** (37: the Foundations fortnight plus level 1 of every other track) live in `src/curriculum/foundations-a.ts`, `foundations-b.ts` and `level1-*.ts` as `LessonContent` objects, registered in `WRITTEN_LESSONS` (`src/curriculum/index.ts`). A written lesson for any syllabus id overrides generation. The test suite checks every level-1 lesson is written, bodies are 350–600 words, passages are short and sourced, with 2 questions and 3 pitfalls.
 - **Copyright:** lesson prose must be original. Model passages: public-domain texts in public-domain translations only, short excerpts.
 
 ## Adding masters
@@ -82,7 +82,7 @@ No router, UI kit, or state library: hash routing is 20 lines (`src/lib/router.t
 ```
 src/
   ai/           client.ts (the only API gateway), prompts.ts, schemas.ts (zod), structured.ts (validate → repair once → raw), tutor.ts, context.ts
-  curriculum/   syllabus.ts (122 entries), foundations-a/b.ts (14 written lessons), types.ts
+  curriculum/   syllabus.ts (122 entries), foundations-a/b.ts + level1-*.ts (37 written lessons), types.ts
   masters/      masters.ts (20), epigraphs.ts
   data/         db.ts (Dexie schema + seed), drafts.ts (autosave, word log, versions), backup.ts (JSON + Markdown ZIP), types.ts
   lib/          streak.ts, scheduler.ts, words.ts, dates.ts, settings.ts, ics.ts, router.ts, Field.tsx

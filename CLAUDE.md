@@ -16,7 +16,7 @@ Daily writing tutor PWA. Vite + React 19 + TypeScript (strict, `noUncheckedIndex
 - `src/data/drafts.ts`: `saveDraftText` is the single write path for writing. It logs positive word deltas to `wordLog` (streak/stats source) and snapshots versions (max 20).
 - `src/lib/scheduler.ts` (rotation) and `src/lib/streak.ts` are pure and unit-tested; keep them free of React and Dexie.
 - `src/features/session/Session.tsx`: the step machine (warmup → lesson → study → draft → feedback → revise → reflect → done). Session drafts are created once via `ensureDraft`; read their ids from the live session row.
-- Curriculum: `src/curriculum/syllabus.ts` (rows per track), written lessons in `foundations-*.ts`.
+- Curriculum: `src/curriculum/syllabus.ts` (rows per track), 37 written lessons in `foundations-*.ts` and `level1-*.ts` (a test requires every level-1 entry to have one). Some model passages are labelled original demonstrations where no public-domain text fit.
 
 ## Conventions
 

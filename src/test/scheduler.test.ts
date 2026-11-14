@@ -14,14 +14,23 @@ describe('syllabus', () => {
     for (const e of SYLLABUS) for (const p of e.prerequisites) expect(ids.has(p), `${e.id} -> ${p}`).toBe(true);
   });
 
-  it('has the 14 Foundations lessons fully written, 350-600 word bodies', () => {
+  it('has the Foundations fortnight and every level-1 lesson fully written, to spec', () => {
     expect(fortnight.every((id) => WRITTEN_LESSONS.has(id))).toBe(true);
+    const level1 = SYLLABUS.filter((e) => e.level === 1);
+    expect(level1.every((e) => WRITTEN_LESSONS.has(e.id)), level1.filter((e) => !WRITTEN_LESSONS.has(e.id)).map((e) => e.id).join()).toBe(true);
+    expect(WRITTEN_LESSONS.size).toBe(37);
     for (const l of WRITTEN_LESSONS.values()) {
+      const entry = SYLLABUS.find((e) => e.id === l.id);
+      expect(entry?.track, l.id).toBe(l.track);
       const words = l.body.split(/\s+/).length;
       expect(words, l.id).toBeGreaterThanOrEqual(350);
       expect(words, l.id).toBeLessThanOrEqual(600);
-      expect(l.questions).toHaveLength(2);
-      expect(l.pitfalls).toHaveLength(3);
+      expect(l.modelPassage.text.split(/\s+/).length, l.id).toBeLessThanOrEqual(130);
+      expect(l.modelPassage.source, l.id).not.toBe('');
+      expect(l.questions, l.id).toHaveLength(2);
+      expect(l.pitfalls, l.id).toHaveLength(3);
+      expect(l.rubric.length, l.id).toBeGreaterThanOrEqual(4);
+      expect(l.exercise.minWords, l.id).toBeLessThan(l.exercise.maxWords);
     }
   });
 });
