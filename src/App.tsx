@@ -10,6 +10,7 @@ import { Library } from './features/library/Library';
 import { Studio } from './features/studio/Studio';
 import { Archive } from './features/archive/Archive';
 import { Settings } from './features/settings/Settings';
+import { UpdateBanner } from './features/UpdateBanner';
 import { Onboarding } from './features/onboarding/Onboarding';
 
 const NAV = [
@@ -37,7 +38,7 @@ export function App() {
     root.style.setProperty('--editor-size', `${settings.fontSize}px`);
   }, [settings.theme, settings.fontSize]);
 
-  if (!settings.onboarded) return <Onboarding />;
+  if (!settings.onboarded) return <><UpdateBanner /><Onboarding /></>;
 
   const section = parts[0] ?? '';
   let page;
@@ -53,6 +54,7 @@ export function App() {
 
   return (
     <div className="shell">
+      <UpdateBanner />
       <a className="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to content</a>
       <header className="topbar">
         <a className="brand" href="#/">Marginalia</a>

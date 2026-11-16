@@ -7,6 +7,7 @@
  * localStorage and is sent only to api.anthropic.com.
  */
 import type Anthropic from '@anthropic-ai/sdk';
+import type { z } from 'zod';
 import type { Usage } from '../data/types';
 import { getApiKey, getSettings, updateSettings } from '../lib/settings';
 
@@ -19,7 +20,7 @@ export const MODELS = [
 /** Models that accept the server-side refusal fallback (Haiku has none). */
 const FALLBACK_MODELS = new Set(['claude-sonnet-5-5', 'claude-opus-5-5']);
 
-export type AiErrorKind = 'no-key' | 'offline' | 'auth' | 'permission' | 'rate' | 'overloaded' | 'network' | 'bad-request' | 'refusal' | 'truncated' | 'aborted' | 'unknown';
+export type AiErrorKind = 'no-key' | 'offline' | 'stale' | 'auth' | 'permission' | 'rate' | 'overloaded' | 'network' | 'bad-request' | 'refusal' | 'truncated' | 'aborted' | 'unknown';
 
 export class AiError extends Error {
   constructor(
@@ -69,6 +70,42 @@ export function hasKey(): boolean {
   return getApiKey().length > 0;
 }
 
+/** Fired when this page is older than the files on the server; the update banner listens. */
+export const STALE_EVENT = 'marginalia:stale';
+const STALE_MESSAGE = 'Marginalia was updated while this page was open. Reload to continue; your writing is saved.';
+
+/** Chrome, Safari and Firefox wordings for a lazy import whose file is gone. */
+export function isStaleChunkError(e: unknown): boolean {
+  return e instanceof Error && /dynamically imported module|Importing a module script failed/i.test(e.message);
+}
+
+function staleError(): AiError {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(STALE_EVENT));
+  return new AiError('stale', STALE_MESSAGE);
+}
+
+/**
+ * The SDK loads on first use so the writing app stays small. If that load fails while
+ * online, the page is an old version whose files were replaced by a newer deploy.
+ */
+async function lazyLoad<T>(load: () => Promise<T>): Promise<T> {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new AiError('offline', 'You are offline. Your writing is saved; the mentor needs a connection.');
+  }
+  try {
+    return await load();
+  } catch (e) {
+    throw isStaleChunkError(e) ? staleError() : new AiError('network', 'Could not load the mentor. Check your connection and try again.');
+  }
+}
+
+/** JSON schema for structured output, from a zod schema (unsupported constraints are stripped by the SDK helper). */
+export async function jsonFormat(schema: z.ZodType): Promise<Anthropic.Beta.BetaJSONOutputFormat> {
+  const { zodOutputFormat } = await lazyLoad(() => import('@anthropic-ai/sdk/helpers/zod'));
+  const f = zodOutputFormat(schema);
+  return { type: f.type, schema: f.schema };
+}
+
 export async function callModel(opts: CallOptions): Promise<CallResult> {
   const apiKey = getApiKey();
   if (!apiKey) throw new AiError('no-key', 'Add your Anthropic API key in Settings to get mentor feedback.');
@@ -76,13 +113,7 @@ export async function callModel(opts: CallOptions): Promise<CallResult> {
     throw new AiError('offline', 'You are offline. Your writing is saved; the mentor needs a connection.');
   }
 
-  let SDK: typeof Anthropic;
-  try {
-    // Loaded on first use so the writing app stays small; the PWA precaches this chunk for offline starts.
-    SDK = (await import('@anthropic-ai/sdk')).default;
-  } catch {
-    throw new AiError('network', 'Could not load the mentor. Check your connection and try again.');
-  }
+  const SDK = (await lazyLoad(() => import('@anthropic-ai/sdk'))).default;
   const client = new SDK({ apiKey, dangerouslyAllowBrowser: true, maxRetries: 2 });
   const fallback = FALLBACK_MODELS.has(opts.model);
 
@@ -126,6 +157,7 @@ function recordUsage(u: Usage): void {
 /** Normalize anything thrown by a mentor call into an AiError with a readable message. */
 export function toAiError(e: unknown): AiError {
   if (e instanceof AiError) return e;
+  if (isStaleChunkError(e)) return staleError();
   if (e instanceof DOMException && e.name === 'AbortError') return new AiError('aborted', 'Stopped.');
   return new AiError('unknown', e instanceof Error ? e.message : 'Something went wrong talking to the mentor.');
 }

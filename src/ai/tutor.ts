@@ -1,6 +1,6 @@
 /** High-level Tutor operations. Each builds a small prompt and goes through client.callModel. */
 import type { z } from 'zod';
-import { callModel } from './client';
+import { callModel, jsonFormat } from './client';
 import { getStructured, type Structured } from './structured';
 import {
   EDITOR_TASK, FEEDBACK_TASK, IMITATION_TASK, LESSON_TASK, MENTOR_CHAT_TASK, PREMISE_ADDENDUM,
@@ -19,19 +19,17 @@ import type { Master } from '../masters/masters';
 async function structured<T>(schema: z.ZodType<T>, task: string, user: string, model: string, effort: 'low' | 'medium' = 'medium'): Promise<Structured<T>> {
   const s = getSettings();
   const system = systemPrompt(s.intensity, task);
-  const { zodOutputFormat } = await import('@anthropic-ai/sdk/helpers/zod');
-  const format = zodOutputFormat(schema);
-  const jsonFormat = { type: format.type, schema: format.schema };
+  const format = await jsonFormat(schema);
   return getStructured({
     schema,
-    call: async () => (await callModel({ model, system, effort, format: jsonFormat, messages: [{ role: 'user', content: user }] })).text,
+    call: async () => (await callModel({ model, system, effort, format, messages: [{ role: 'user', content: user }] })).text,
     repair: async (raw, error) =>
       (
         await callModel({
           model,
           system,
           effort: 'low',
-          format: jsonFormat,
+          format,
           messages: [
             { role: 'user', content: user },
             { role: 'assistant', content: raw },

@@ -11,7 +11,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt': a new version waits until the user reloads (the app shows a banner).
+      // 'autoUpdate' took over open pages and deleted the old version's files, so an
+      // open page's next lazy import failed ("Failed to fetch dynamically imported module").
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Marginalia',

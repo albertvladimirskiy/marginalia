@@ -194,3 +194,12 @@ ins::before { content: ' [added] '; }
 del::before { content: ' [cut] '; }
 .legend del, .legend ins { padding: 0 4px; }
 .score-up { color: var(--accent); }
+
+/* Update banner: quiet, bottom of the screen, never covers the writing area's top */
+.update-banner {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 20;
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;
+  width: min(560px, calc(100vw - 32px)); padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 12%, transparent); font-size: 0.9rem;
+}
