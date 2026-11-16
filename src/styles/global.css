@@ -175,7 +175,6 @@ body.focus-mode .editor textarea.page { min-height: 90vh; padding-bottom: 50vh; 
 
 @media (prefers-reduced-motion: no-preference) {
   button, .btn, .nav a { transition: border-color 120ms ease, background 120ms ease, color 120ms ease; }
-  html { scroll-behavior: smooth; }
 }
 @media (max-width: 600px) {
   h1 { font-size: 1.55rem; }

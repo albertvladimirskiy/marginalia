@@ -64,6 +64,8 @@ export function Editor({ draftId, timerMinutes, minWords, maxWords, placeholder,
   const latest = useRef<string | null>(null);
   const dirty = useRef(false);
   const lastInput = useRef(Date.now());
+  /** Set by typing so the layout effect knows to run the focus-mode typewriter scroll. */
+  const typed = useRef(false);
 
   const versions = useLiveQuery(() => db.versions.where('draftId').equals(draftId).reverse().sortBy('savedAt'), [draftId]);
 
@@ -109,16 +111,9 @@ export function Editor({ draftId, timerMinutes, minWords, maxWords, placeholder,
     };
   }, [flush]);
 
-  // Auto-grow the page so the window scrolls, not the textarea.
+  // Focus mode hides chrome; Escape leaves it. A layout effect declared before the
+  // auto-grow so the textarea is measured with the right CSS (focus mode adds padding).
   useLayoutEffect(() => {
-    const ta = taRef.current;
-    if (!ta) return;
-    ta.style.height = 'auto';
-    ta.style.height = `${ta.scrollHeight}px`;
-  }, [text, focus, showPreview]);
-
-  // Focus mode hides chrome; Escape leaves it.
-  useEffect(() => {
     document.body.classList.toggle('focus-mode', focus);
     if (!focus) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFocus(false);
@@ -128,6 +123,32 @@ export function Editor({ draftId, timerMinutes, minWords, maxWords, placeholder,
       window.removeEventListener('keydown', onKey);
     };
   }, [focus]);
+
+  // Auto-grow the page so the window scrolls, not the textarea.
+  // Measuring means collapsing the textarea to 'auto' for a moment. On a long draft
+  // that makes the page short, the browser clamps the scroll position, and the page
+  // jumps up (then the caret drags it back down: the stutter). Holding the page at its
+  // current height while measuring keeps the scroll position where it is.
+  useLayoutEffect(() => {
+    const ta = taRef.current;
+    if (!ta) return;
+    const doc = document.documentElement;
+    doc.style.minHeight = `${doc.scrollHeight}px`;
+    ta.style.height = 'auto';
+    ta.style.height = `${ta.scrollHeight}px`;
+    doc.style.minHeight = '';
+
+    // Typewriter scroll in focus mode: keep the caret line near the middle, moving the
+    // page only when the caret leaves the middle band, instantly (animation reads as jitter).
+    if (focus && typed.current && document.activeElement === ta) {
+      typed.current = false;
+      const caretY = ta.getBoundingClientRect().top + caretTop(ta);
+      const h = window.innerHeight;
+      if (caretY < h * 0.3 || caretY > h * 0.6) {
+        window.scrollTo({ top: window.scrollY + caretY - h * 0.45, behavior: 'instant' });
+      }
+    }
+  }, [text, focus, showPreview]);
 
   // Timer.
   useEffect(() => {
@@ -159,13 +180,7 @@ export function Editor({ draftId, timerMinutes, minWords, maxWords, placeholder,
     dirty.current = true;
     lastInput.current = Date.now();
     if (nudge) setNudge(null);
-    if (focus && taRef.current) {
-      const ta = taRef.current;
-      requestAnimationFrame(() => {
-        const y = ta.getBoundingClientRect().top + window.scrollY + caretTop(ta);
-        window.scrollTo({ top: y - window.innerHeight * 0.45 });
-      });
-    }
+    typed.current = true;
   }
 
   async function restore(versionId: number) {
